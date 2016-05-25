@@ -1,6 +1,6 @@
 package com.datafibers.jobrunner.Jobs;
 
-import com.datafibers.jobrunner.Jobs.Command.JobCommand;
+import com.datafibers.jobrunner.Jobs.Command.CmdOther;
 
 import java.util.Date;
 import java.util.concurrent.Callable;
@@ -23,8 +23,7 @@ public abstract class Job implements Callable{
 
     private Date startTime;
     private Date endTime;
-    private JobCommand jobCommand;
-
+    private CmdOther jobCommand;
     private JobType type;
 
     public Job(Long id){this.id=id;}
@@ -51,15 +50,22 @@ public abstract class Job implements Callable{
     public abstract String getOutput();
 
     public abstract boolean tryCancel(); // try to cancel this job
+
     public abstract String getJobInfo();
 
-    public Date getStartTime(){return startTime;}
-    public Date getEndTime(){return endTime;}
+    public Date getStartTime(){
+        return startTime;
+    }
+
+    public Date getEndTime(){
+        return endTime;
+    }
 
     public String convertDateToString(Date date){
-        if(date==null) return "Not started yet";
+        if(date == null) return "Not started yet";
         else return date.toString();
     }
+
     public String getStartTimeStr(){
         return convertDateToString(startTime);
     }
@@ -67,9 +73,13 @@ public abstract class Job implements Callable{
     public String getEndTimeStr(){
         return convertDateToString(endTime);
     }
-    public JobCommand getJobCommand(){return jobCommand;}
-    public JobType getJobType(){return type;}
 
+    public CmdOther getJobCommand(){
+        return jobCommand;
+    }
 
+    public JobType getJobType(){
+        return type;
+    }
 
 }

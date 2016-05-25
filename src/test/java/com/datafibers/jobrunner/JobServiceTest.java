@@ -1,6 +1,8 @@
 package com.datafibers.jobrunner;
 
-import com.datafibers.jobrunner.Jobs.Command.JobCommand;
+import com.datafibers.jobrunner.Jobs.Command.CmdEnum;
+import com.datafibers.jobrunner.Jobs.Command.CmdGeneric;
+import com.datafibers.jobrunner.Jobs.Command.CmdOther;
 import com.datafibers.jobrunner.Jobs.Response.Response;
 import com.datafibers.jobrunner.Requests.Request;
 import org.junit.Test;
@@ -22,7 +24,8 @@ public class JobServiceTest {
         req.request= Request.REQUEST_TYPE.CREATE;
 
         HashMap<String,String> commandArgs = new HashMap<>();
-        req.details=new JobCommand(JobCommand.COMMAND.EXECUTE,commandArgs);
+        req.details = new CmdOther(com.datafibers.jobrunner.Jobs.Command.CmdEnum.EXECUTE, commandArgs) {
+        };
 
         //no command args supplied to create command, so it should give back and error instead of a job id
         Response response =service.runCommand(req);
@@ -39,7 +42,7 @@ public class JobServiceTest {
         HashMap<String,String> commandArgs = new HashMap<>();
         commandArgs.put("EXECUTABLE","dir");
         commandArgs.put("ARGS","");
-        req.details=new JobCommand(JobCommand.COMMAND.EXECUTE,commandArgs);
+        req.details= new CmdOther(CmdEnum.EXECUTE, commandArgs);
 
         Response response =service.runCommand(req);
         assertEquals(response.status,Response.RESPONSE_STATUS.OK);

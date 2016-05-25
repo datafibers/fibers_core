@@ -14,7 +14,7 @@ import java.nio.charset.Charset;
 public class JsonService extends Service<HttpRequest, HttpResponse> {
 
     JobService jobService = new JobService();
-    Gson gson= new Gson();
+    Gson gson = new Gson();
 
     /**
      * HttpResponse creator that takes in a Future<String> message as the content for the body
@@ -47,31 +47,32 @@ public class JsonService extends Service<HttpRequest, HttpResponse> {
 
     @Override
     public Future<HttpResponse> apply(HttpRequest request) {
-        Request jsonRequest=null;
+        Request jsonRequest = null;
 
         // expect JSON
         if (request.getMethod() != HttpMethod.POST) {
-            return createResponseFromMsg(request,"This service only accepts POST requests",HttpResponseStatus.METHOD_NOT_ALLOWED);
+            return createResponseFromMsg(request, "This service only accepts POST requests",HttpResponseStatus.METHOD_NOT_ALLOWED);
         }
 
         // Get the requests's content
-        String content= request.getContent().toString(Charset.defaultCharset());
+        String content = request.getContent().toString(Charset.defaultCharset());
 
         try { // try to parse the Json
-            jsonRequest= gson.fromJson(content, Request.class);
+            jsonRequest = gson.fromJson(content, Request.class);
         }catch(JsonParseException ex) {
             System.err.println(ex.getMessage());
             return createResponseFromMsg(request, "Error parsing JSON:" + ex.getMessage(), HttpResponseStatus.BAD_REQUEST);
         }
-        if(jsonRequest==null || !jsonRequest.isValid()){
+        if(jsonRequest == null || !jsonRequest.isValid()){
             return createResponseFromMsg(request, "Cannot parse JSON Request into a request" , HttpResponseStatus.BAD_REQUEST);
         }
         // Debug message
-        System.out.println("Cmd =" + jsonRequest.toString());
+        System.out.println("########################## Message ##########################" + "\n"
+                + "request = " + jsonRequest.toString());
 
         // Call the jobCommand's handler and get a response back
 //        Future<String> responseString = jobRequestHandler.handleCommand(jsonRequest);
-        String responseString =gson.toJson(jobService.runCommand(jsonRequest)).toString();
+        String responseString = gson.toJson(jobService.runCommand(jsonRequest)).toString();
 
         // Return response asynchronously
         return createResponseFromMsg(request,responseString,HttpResponseStatus.ACCEPTED);

@@ -25,7 +25,7 @@ public class Server {
 
         JsonService jsonService = new JsonService();
         try {
-            ListeningServer server=Http.serve(":"+port,jsonService);
+            ListeningServer server=Http.serve(":" + port, jsonService);
 
             //ListeningServer server=Http.serve(":"+port,restService);
             Await.ready(server);

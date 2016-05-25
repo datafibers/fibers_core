@@ -1,17 +1,19 @@
 package com.datafibers.jobrunner.Jobs;
 
-import com.datafibers.jobrunner.Jobs.Command.JobCommand;
+import com.datafibers.jobrunner.Jobs.Command.CmdEnum;
+import com.datafibers.jobrunner.Jobs.Command.CmdGeneric;
+import com.datafibers.jobrunner.Jobs.Command.CmdHive;
 import com.google.common.base.Splitter;
 
 import java.io.*;
 import java.util.*;
 
-public class Executable extends Job{
+public class Executable extends Job {
     private ProcessBuilder builder;
     private Process process;
-    private final JobCommand command;
+    private final CmdGeneric command;
 
-    private volatile boolean shouldBeKilled=false;
+    private volatile boolean shouldBeKilled = false;
 
     // Max amount of output and Error data that we would return
     private final int DATA_RETURN_SIZE_THRESHOLD = 500000;// 500 kb
@@ -21,11 +23,11 @@ public class Executable extends Job{
 
     private final File stdOut,stdErr;
 
-    public Executable(Long id, File stdOut, File stdErr, JobCommand command){
+    public Executable(Long id, File stdOut, File stdErr, CmdGeneric command){
         super(id);
-        this.command=command;
-        this.stdOut=stdOut;
-        this.stdErr=stdErr;
+        this.command = command;
+        this.stdOut = stdOut;
+        this.stdErr = stdErr;
     }
 
     /**
@@ -44,33 +46,23 @@ public class Executable extends Job{
     }
 
     /**
-     * Converts the map of key:argument values to a command string, separated by a space
-     * to feed into the Process builder
-     * @return
-     */
-    private List<String> getCommandString() throws Exception{
-        List<String> cmd = new ArrayList<String>();
-        HashMap<String, String> args = command.getArgs();
-        String execCommand = args.get("EXECUTABLE");
-        if (execCommand == null) {
-            throw new Exception("Missing 'EXECUTABLE' field in the command");
-        }
-        cmd.add(execCommand);
-        String arguments = args.get("ARGS");
-        if (arguments == null) {
-            throw new IllegalArgumentException("Missing 'ARGS' filed in the command");
-        }
-        cmd.addAll(Splitter.on(" ").splitToList(arguments));
-        return cmd;
-    }
-
-    /**
      * Set up this job to run. Performs validation of command format and throws an exception if the required
      * params aren't present.
      * @throws Exception
      */
     public void setupJob() throws Exception{
-        builder=new ProcessBuilder(getCommandString());
+
+        switch(command.getExec()){
+            case "BATCH":
+            CmdHive cmd  = new CmdHive(command.getCommand(), command.getArgs());
+            builder = new ProcessBuilder(cmd.getCommandString());
+            System.out.println("BATCH=>HIVE " + cmd.getCommandString());
+            break;
+
+            default:
+            builder = new ProcessBuilder(command.getCommandString());
+            System.out.println(command.getCommandString());
+        }
         builder.redirectError(stdErr);
         builder.redirectOutput(stdOut);
     }
@@ -80,7 +72,7 @@ public class Executable extends Job{
      */
     public Job call(){
         try{
-            this.process=builder.start();
+            this.process = builder.start();
             this.setStatus(JOB_STATUS.RUNNING);
             this.setStartTime(new Date());
 
@@ -98,7 +90,7 @@ public class Executable extends Job{
                 } catch (InterruptedException ex) {}
             }
         }catch (IOException ex){
-            System.err.println("IO Exception when trying to run process"+command);
+            System.err.println("IO Exception when trying to run process: " + command.getCommand() + ": " + command.getExec());
             this.setStatus(JOB_STATUS.ERROR);
         }
         return this;
@@ -112,8 +104,8 @@ public class Executable extends Job{
     public String getJobInfo(){
         StringBuilder sb = new StringBuilder();
         JOB_STATUS status = getStatus();
-        sb.append("This job's status is: "+status.toString()+"\n. The job started at: "+getStartTimeStr());
-        if (status==JOB_STATUS.FINISHED || status==JOB_STATUS.ERROR){
+        sb.append("This job's status is: " + status.toString() + "\n. The job started at: " + getStartTimeStr());
+        if (status == JOB_STATUS.FINISHED || status == JOB_STATUS.ERROR){
             sb.append("The job ended at:"+getEndTimeStr());
         }
         return sb.toString();
@@ -168,11 +160,11 @@ public class Executable extends Job{
             int fileSize = (int)file.length();
             if(fileSize> DATA_RETURN_SIZE_THRESHOLD){
                 char [] chars = new char[DATA_RETURN_SIZE_THRESHOLD];
-                reader.read(chars, 0, DATA_RETURN_SIZE_THRESHOLD / 2);
+                reader.read(chars, 0, DATA_RETURN_SIZE_THRESHOLD/2);
                 buffer.append(chars);
-                buffer.append("\n"+SEPARATOR+"\n");
-                reader.skip(fileSize-DATA_RETURN_SIZE_THRESHOLD/2);
-                reader.read(chars, 0, DATA_RETURN_SIZE_THRESHOLD / 2);
+                buffer.append("\n" + SEPARATOR + "\n");
+                reader.skip(fileSize - DATA_RETURN_SIZE_THRESHOLD/2);
+                reader.read(chars, 0, DATA_RETURN_SIZE_THRESHOLD/2);
                 buffer.append(chars);
             }
             else{
@@ -182,7 +174,7 @@ public class Executable extends Job{
             }
         }
         catch(IOException ex){
-            return "Error reading file:"+stdErr.getPath()+"\n"+ex.getMessage();
+            return "Error reading file:" + stdErr.getPath() + "\n" + ex.getMessage();
         }
 
         return buffer.toString();
